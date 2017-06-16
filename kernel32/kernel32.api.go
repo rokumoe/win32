@@ -14,6 +14,7 @@ var (
 	pfnGetProcAddress              uintptr
 	pfnCreateIoCompletionPort      uintptr
 	pfnGetQueuedCompletionStatusEx uintptr
+	pfnPostQueuedCompletionStatus  uintptr
 	pfnSetProcessWorkingSetSize    uintptr
 )
 
@@ -108,6 +109,20 @@ func GetQueuedCompletionStatusEx(completionport syscall.Handle, entries []OVERLA
 	return err
 }
 
+func PostQueuedCompletionStatus(completionport syscall.Handle, transferred uint32, completionkey uintptr, overlapped *syscall.Overlapped) error {
+	_, _, en := syscall.Syscall6(pfnPostQueuedCompletionStatus, 4,
+		uintptr(completionport),
+		uintptr(transferred),
+		completionkey,
+		uintptr(unsafe.Pointer(overlapped)),
+		0, 0)
+	var err error
+	if en != 0 {
+		err = en
+	}
+	return err
+}
+
 func SetProcessWorkingSetSize(process syscall.Handle, minimumWorkingSetSize uint, maximumWorkingSetSize uint) error {
 	_, _, en := syscall.Syscall(pfnSetProcessWorkingSetSize, 3,
 		uintptr(process),
@@ -131,5 +146,6 @@ func init() {
 	pfnGetProcAddress = mustfind(hkernel32, "GetProcAddress\000")
 	pfnCreateIoCompletionPort = mustfind(hkernel32, "CreateIoCompletionPort\000")
 	pfnGetQueuedCompletionStatusEx = mustfind(hkernel32, "GetQueuedCompletionStatusEx\000")
+	pfnPostQueuedCompletionStatus = mustfind(hkernel32, "PostQueuedCompletionStatus\000")
 	pfnSetProcessWorkingSetSize = mustfind(hkernel32, "SetProcessWorkingSetSize\000")
 }

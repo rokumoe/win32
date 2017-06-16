@@ -484,5 +484,5 @@ func main() {
 		}
 	}
 
-	fmt.Println("genapi:", "done")
+	fmt.Println("genapi:", outputfile, "done")
 }

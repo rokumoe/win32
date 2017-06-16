@@ -20,8 +20,10 @@ var (
 	pfnGetWindowTextW      uintptr
 	pfnGetDC               uintptr
 	pfnGetDCEx             uintptr
+	pfnReleaseDC           uintptr
 	pfnGetDesktopWindow    uintptr
 	pfnGetForegroundWindow uintptr
+	pfnGetSystemMetrics    uintptr
 )
 
 func mustload(libname string) syscall.Handle {
@@ -171,6 +173,13 @@ func GetDCEx(wnd syscall.Handle, hrgnClip syscall.Handle, flags uint32) (syscall
 	return syscall.Handle(r1), err
 }
 
+func ReleaseDC(wnd syscall.Handle, hdc syscall.Handle) {
+	syscall.Syscall(pfnReleaseDC, 2,
+		uintptr(wnd),
+		uintptr(hdc),
+		0)
+}
+
 func GetDesktopWindow() (syscall.Handle, error) {
 	r1, _, en := syscall.Syscall(pfnGetDesktopWindow, 0,
 		0, 0, 0)
@@ -191,6 +200,17 @@ func GetForegroundWindow() (syscall.Handle, error) {
 	return syscall.Handle(r1), err
 }
 
+func GetSystemMetrics(index int32) (int32, error) {
+	r1, _, en := syscall.Syscall(pfnGetSystemMetrics, 1,
+		uintptr(index),
+		0, 0)
+	var err error
+	if en != 0 {
+		err = en
+	}
+	return int32(r1), err
+}
+
 func init() {
 	hkernel32 := mustload("kernel32.dll")
 	var err error
@@ -209,6 +229,8 @@ func init() {
 	pfnGetWindowTextW = mustfind(huser32, "GetWindowTextW\000")
 	pfnGetDC = mustfind(huser32, "GetDC\000")
 	pfnGetDCEx = mustfind(huser32, "GetDCEx\000")
+	pfnReleaseDC = mustfind(huser32, "ReleaseDC\000")
 	pfnGetDesktopWindow = mustfind(huser32, "GetDesktopWindow\000")
 	pfnGetForegroundWindow = mustfind(huser32, "GetForegroundWindow\000")
+	pfnGetSystemMetrics = mustfind(huser32, "GetSystemMetrics\000")
 }

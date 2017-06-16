@@ -11,7 +11,11 @@ import (
 var _ unsafe.Pointer // keep unsafe
 
 var (
-	pfnBitBlt uintptr
+	pfnBitBlt             uintptr
+	pfnDeleteDC           uintptr
+	pfnCreateCompatibleDC uintptr
+	pfnSelectObject       uintptr
+	pfnCreateDIBSection   uintptr
 )
 
 func mustload(libname string) syscall.Handle {
@@ -70,6 +74,39 @@ func BitBlt(hdc syscall.Handle, x int, y int, cx int, cy int, hdcSrc syscall.Han
 	)
 }
 
+func DeleteDC(hdc syscall.Handle) {
+	syscall.Syscall(pfnDeleteDC, 1,
+		uintptr(hdc),
+		0, 0)
+}
+
+func CreateCompatibleDC(hdc syscall.Handle) syscall.Handle {
+	r1, _, _ := syscall.Syscall(pfnCreateCompatibleDC, 1,
+		uintptr(hdc),
+		0, 0)
+	return syscall.Handle(r1)
+}
+
+func SelectObject(hdc syscall.Handle, hgdiobj syscall.Handle) syscall.Handle {
+	r1, _, _ := syscall.Syscall(pfnSelectObject, 2,
+		uintptr(hdc),
+		uintptr(hgdiobj),
+		0)
+	return syscall.Handle(r1)
+}
+
+func CreateDIBSection(hdc syscall.Handle, bmi *BITMAPINFO, usage uint32, ppvBits unsafe.Pointer, section syscall.Handle, offset uint32) syscall.Handle {
+	r1, _, _ := syscall.Syscall6(pfnCreateDIBSection, 6,
+		uintptr(hdc),
+		uintptr(unsafe.Pointer(bmi)),
+		uintptr(usage),
+		uintptr(ppvBits),
+		uintptr(section),
+		uintptr(offset),
+	)
+	return syscall.Handle(r1)
+}
+
 func init() {
 	hkernel32 := mustload("kernel32.dll")
 	var err error
@@ -80,4 +117,8 @@ func init() {
 	hgdi32 := mustload("gdi32.dll")
 	_ = hgdi32
 	pfnBitBlt = mustfind(hgdi32, "BitBlt\000")
+	pfnDeleteDC = mustfind(hgdi32, "DeleteDC\000")
+	pfnCreateCompatibleDC = mustfind(hgdi32, "CreateCompatibleDC\000")
+	pfnSelectObject = mustfind(hgdi32, "SelectObject\000")
+	pfnCreateDIBSection = mustfind(hgdi32, "CreateDIBSection\000")
 }
